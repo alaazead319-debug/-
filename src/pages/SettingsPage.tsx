@@ -307,36 +307,25 @@ export function SettingsPage({
             <div className="mb-2 flex items-center gap-2">
               <Code2 className="h-4 w-4 text-teal-600" />
               <h4 className="text-sm font-bold text-slate-800">ملف مريض مفرد (للوكيل الذكي)</h4>
-              <span className="badge bg-teal-100 text-teal-700 ring-teal-300">جديد</span>
+              <span className="badge bg-teal-100 text-teal-700 ring-teal-300">URL واحد</span>
             </div>
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <input value={`${apiUrl}/patients/<ID>`} readOnly dir="ltr" className="input flex-1 font-mono text-xs" />
-                <button onClick={() => copyText(`${apiUrl}/patients/<ID>`, 'pf-id')} className="btn-secondary whitespace-nowrap">
-                  {copied === 'pf-id' ? <CheckCircle2 className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}
-                  نسخ
-                </button>
-              </div>
-              <div className="flex items-center gap-2">
-                <input value={`${apiUrl}/patients/<phone>?by=phone`} readOnly dir="ltr" className="input flex-1 font-mono text-xs" />
-                <button onClick={() => copyText(`${apiUrl}/patients/<phone>?by=phone`, 'pf-phone')} className="btn-secondary whitespace-nowrap">
-                  {copied === 'pf-phone' ? <CheckCircle2 className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}
-                  نسخ
-                </button>
-              </div>
-              <div className="flex items-center gap-2">
-                <input value={`${apiUrl}/patients/<name>?by=name`} readOnly dir="ltr" className="input flex-1 font-mono text-xs" />
-                <button onClick={() => copyText(`${apiUrl}/patients/<name>?by=name`, 'pf-name')} className="btn-secondary whitespace-nowrap">
-                  {copied === 'pf-name' ? <CheckCircle2 className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}
-                  نسخ
-                </button>
-              </div>
+            <div className="flex items-center gap-2">
+              <input value={`${apiUrl}/patients/<الاسم أو الهاتف أو المعرّف>`} readOnly dir="ltr" className="input flex-1 font-mono text-xs" />
+              <button onClick={() => copyText(`${apiUrl}/patients/<الاسم أو الهاتف أو المعرّف>`, 'pf')} className="btn-secondary whitespace-nowrap">
+                {copied === 'pf' ? <CheckCircle2 className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}
+                نسخ
+              </button>
             </div>
             <p className="mt-2 text-xs text-slate-600">
               يُرجع ملفًا مختصرًا لمريض واحد: بياناته الشخصية + ملخص (عدد المواعيد، آخر زيارة، المبالغ، المتبقي) + آخر 5 مواعيد و5 فواتير. مثالي لوكيل الذكاء الاصطناعي.
             </p>
-            <div className="mt-2 text-xs text-slate-500">
-              <code className="rounded bg-white px-1" dir="ltr">by=id</code> (افتراضي) · <code className="rounded bg-white px-1" dir="ltr">by=phone</code> · <code className="rounded bg-white px-1" dir="ltr">by=name</code> (بحث جزئي)
+            <div className="mt-2 rounded-lg bg-white p-2.5 text-xs text-slate-600">
+              <span className="font-bold text-slate-700">URL واحد يكتشف النوع تلقائيًا:</span>
+              <ul className="mt-1 list-inside list-disc space-y-0.5">
+                <li>إذا أدخلت <code className="rounded bg-slate-100 px-1" dir="ltr">UUID</code> → يبحث بالمعرّف</li>
+                <li>إذا أدخلت أرقامًا (<code className="rounded bg-slate-100 px-1" dir="ltr">0551234567</code>) → يبحث برقم الهاتف</li>
+                <li>إذا أدخلت نصًا (<code className="rounded bg-slate-100 px-1">أحمد</code>) → يبحث بالاسم (بحث جزئي، يدعم العربي)</li>
+              </ul>
             </div>
           </div>
 
@@ -398,7 +387,7 @@ export function SettingsPage({
               <li>الصق عنوان <code className="rounded bg-white px-1" dir="ltr">.../clinic-api/services</code> في حقل URL</li>
               <li>لا حاجة لمفاتيح أو مصادقة — الـ API عام ومفتوح</li>
               <li>ستجد البيانات في <code className="rounded bg-white px-1">$json</code> (مصفوفة مباشرة)</li>
-              <li>لملف مريض مفرد: <code className="rounded bg-white px-1" dir="ltr">.../patients/&lt;id&gt;</code></li>
+              <li>لملف مريض مفرد: <code className="rounded bg-white px-1" dir="ltr">.../patients/&lt;الاسم أو الهاتف أو المعرّف&gt;</code> — URL واحد يكتشف النوع تلقائيًا</li>
             </ol>
           </div>
         </div>

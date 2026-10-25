@@ -121,27 +121,65 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    // ----- /patients/:id  (single patient file, minimal summary) -----
+    // ----- /patients/:query  (single patient file, minimal summary) -----
+    // One URL works for id, phone, or name — auto-detected. No ?by= needed.
     if (resource === 'patients' && resourceId) {
-      // Resolve by id, phone, or name (?by=phone|name).
-      const by = url.searchParams.get('by') ?? 'id';
-      let patientQuery = supabase.from('patients').select('*');
-      if (by === 'phone') patientQuery = patientQuery.eq('phone', resourceId).limit(1);
-      else if (by === 'name') patientQuery = patientQuery.ilike('name', `%${resourceId}%`).limit(1);
-      else patientQuery = patientQuery.eq('id', resourceId).limit(1);
+      // URL-decode (Arabic names arrive percent-encoded in the path).
+      let q = resourceId;
+      try {
+        q = decodeURIComponent(resourceId);
+      } catch {
+        q = resourceId;
+      }
+      q = q.trim();
+      // ?by= overrides auto-detection if explicitly provided (kept for back-compat).
+      const by = url.searchParams.get('by');
 
-      const { data: pData, error: pErr } = await patientQuery.maybeSingle();
+      // Auto-detection order: UUID → phone (exact) → name (partial).
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(q);
+      const looksLikePhone = /^[+0-9\s()-]{4,20}$/.test(q);
+
+      const lookupBy: 'id' | 'phone' | 'name' =
+        by === 'phone' ? 'phone' : by === 'name' ? 'name' : isUuid ? 'id' : looksLikePhone ? 'phone' : 'name';
+
+      // Run the appropriate query. For name/phone we fetch with .limit(1)
+      // so we can inspect the SQL error (if any) before deciding not-found.
+      let pData: PatientFullRow | null = null;
+      let pErr: unknown = null;
+
+      if (lookupBy === 'id') {
+        const r = await supabase.from('patients').select('*').eq('id', q).maybeSingle();
+        pData = (r.data as PatientFullRow | null) ?? null;
+        pErr = r.error;
+      } else if (lookupBy === 'phone') {
+        const r = await supabase
+          .from('patients')
+          .select('*')
+          .or(`phone.eq.${q},phone.eq.${q.replace(/\s|-|\(|\)/g, '')}`)
+          .limit(1);
+        pErr = r.error;
+        pData = ((r.data as PatientFullRow[] | null) ?? [])[0] ?? null;
+      } else {
+        const r = await supabase
+          .from('patients')
+          .select('*')
+          .ilike('name', `%${q}%`)
+          .limit(1);
+        pErr = r.error;
+        pData = ((r.data as PatientFullRow[] | null) ?? [])[0] ?? null;
+      }
+
       if (pErr) {
-        return new Response(JSON.stringify({ error: pErr.message }), {
+        return new Response(JSON.stringify({ error: (pErr as { message?: string }).message ?? String(pErr) }), {
           status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
       if (!pData) {
-        return new Response(JSON.stringify({ error: 'المريض غير موجود' }), {
-          status: 404,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        return new Response(
+          JSON.stringify({ error: 'المريض غير موجود', query: q, looked_by: lookupBy }),
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        );
       }
 
       const p = pData as PatientFullRow;
@@ -274,11 +312,11 @@ Deno.serve(async (req: Request) => {
           'GET /services': 'كل الخدمات (مصفوفة كائنات)',
           'GET /services?category=cleaning&q=تنظيف&limit=50': 'فلترة الخدمات',
           'GET /patients': 'قائمة المرضى (مصفوفة كائنات)',
-          'GET /patients/:id': 'ملف مريض مفرد بالمعرّف (الأقل للوكيل الذكي)',
-          'GET /patients/<phone>?by=phone': 'ملف مريض بالهاتف',
-          'GET /patients/<name>?by=name': 'ملف مريض بالاسم (بحث جزئي)',
+          'GET /patients/:id': 'ملف مريض — بالمعرّف UUID',
+          'GET /patients/<phone>': 'ملف مريض — برقم الهاتف (يُكتشف تلقائيًا)',
+          'GET /patients/<name>': 'ملف مريض — بالاسم العربي/الإنجليزي (يُكتشف تلقائيًا، بحث جزئي)',
         },
-        note: 'افتراضيًا يُرجع مصفوفة مباشرة في الجذر. استخدم ?format=object للغلاف.',
+        note: 'افتراضيًا يُرجع مصفوفة مباشرة في الجذر. استخدم ?format=object للغلاف. ملف المريض يكتشف النوع تلقائيًا: UUID ← هاتف ← اسم.',
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     );
