@@ -310,8 +310,8 @@ export function SettingsPage({
               <span className="badge bg-teal-100 text-teal-700 ring-teal-300">URL واحد</span>
             </div>
             <div className="flex items-center gap-2">
-              <input value={`${apiUrl}/patients/<الاسم أو الهاتف أو المعرّف>`} readOnly dir="ltr" className="input flex-1 font-mono text-xs" />
-              <button onClick={() => copyText(`${apiUrl}/patients/<الاسم أو الهاتف أو المعرّف>`, 'pf')} className="btn-secondary whitespace-nowrap">
+              <input value={`${apiUrl}/patients?q=<الاسم أو الهاتف أو المعرّف>`} readOnly dir="ltr" className="input flex-1 font-mono text-xs" />
+              <button onClick={() => copyText(`${apiUrl}/patients?q=<الاسم أو الهاتف أو المعرّف>`, 'pf')} className="btn-secondary whitespace-nowrap">
                 {copied === 'pf' ? <CheckCircle2 className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}
                 نسخ
               </button>
@@ -322,9 +322,9 @@ export function SettingsPage({
             <div className="mt-2 rounded-lg bg-white p-2.5 text-xs text-slate-600">
               <span className="font-bold text-slate-700">URL واحد يكتشف النوع تلقائيًا:</span>
               <ul className="mt-1 list-inside list-disc space-y-0.5">
-                <li>إذا أدخلت <code className="rounded bg-slate-100 px-1" dir="ltr">UUID</code> → يبحث بالمعرّف</li>
-                <li>إذا أدخلت أرقامًا (<code className="rounded bg-slate-100 px-1" dir="ltr">0551234567</code>) → يبحث برقم الهاتف</li>
-                <li>إذا أدخلت نصًا (<code className="rounded bg-slate-100 px-1">أحمد</code>) → يبحث بالاسم (بحث جزئي، يدعم العربي)</li>
+                <li>اسم: <code className="rounded bg-slate-100 px-1" dir="ltr">/patients?q=زياد</code> (بحث جزئي، يدعم العربي)</li>
+                <li>هاتف: <code className="rounded bg-slate-100 px-1" dir="ltr">/patients?q=0124478545</code></li>
+                <li>معرّف: <code className="rounded bg-slate-100 px-1" dir="ltr">/patients?q=54685b19-...</code></li>
               </ul>
             </div>
           </div>
@@ -387,7 +387,7 @@ export function SettingsPage({
               <li>الصق عنوان <code className="rounded bg-white px-1" dir="ltr">.../clinic-api/services</code> في حقل URL</li>
               <li>لا حاجة لمفاتيح أو مصادقة — الـ API عام ومفتوح</li>
               <li>ستجد البيانات في <code className="rounded bg-white px-1">$json</code> (مصفوفة مباشرة)</li>
-              <li>لملف مريض مفرد: <code className="rounded bg-white px-1" dir="ltr">.../patients/&lt;الاسم أو الهاتف أو المعرّف&gt;</code> — URL واحد يكتشف النوع تلقائيًا</li>
+              <li>لملف مريض مفرد: <code className="rounded bg-white px-1" dir="ltr">.../patients?q=&lt;الاسم أو الهاتف&gt;</code> — URL واحد يكتشف النوع تلقائيًا</li>
             </ol>
           </div>
         </div>

@@ -123,24 +123,34 @@ Deno.serve(async (req: Request) => {
 
     // ----- /patients/:query  (single patient file, minimal summary) -----
     // One URL works for id, phone, or name — auto-detected. No ?by= needed.
-    if (resource === 'patients' && resourceId) {
-      // URL-decode (Arabic names arrive percent-encoded in the path).
-      let q = resourceId;
+    // Accepts the query in the path segment OR as ?q= (query param is more
+    // robust for AI agents because it avoids path-encoding issues with
+    // Arabic text and spaces).
+    if (resource === 'patients' && (resourceId || url.searchParams.get('q'))) {
+      // Prefer ?q= (already URL-decoded by URLSearchParams); fall back to path.
+      let q = url.searchParams.get('q') ?? resourceId ?? '';
       try {
-        q = decodeURIComponent(resourceId);
+        q = decodeURIComponent(q);
       } catch {
-        q = resourceId;
+        // already decoded
       }
       q = q.trim();
       // ?by= overrides auto-detection if explicitly provided (kept for back-compat).
       const by = url.searchParams.get('by');
+
+      if (!q) {
+        return new Response(JSON.stringify({ error: 'أدخل اسم أو رقم أو معرّف المريض' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
 
       // Auto-detection order: UUID → phone (exact) → name (partial).
       const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(q);
       const looksLikePhone = /^[+0-9\s()-]{4,20}$/.test(q);
 
       const lookupBy: 'id' | 'phone' | 'name' =
-        by === 'phone' ? 'phone' : by === 'name' ? 'name' : isUuid ? 'id' : looksLikePhone ? 'phone' : 'name';
+        by === 'phone' ? 'phone' : by === 'name' ? 'name' : by === 'id' ? 'id' : isUuid ? 'id' : looksLikePhone ? 'phone' : 'name';
 
       // Run the appropriate query. For name/phone we fetch with .limit(1)
       // so we can inspect the SQL error (if any) before deciding not-found.
@@ -317,6 +327,7 @@ Deno.serve(async (req: Request) => {
           'GET /patients/<name>': 'ملف مريض — بالاسم العربي/الإنجليزي (يُكتشف تلقائيًا، بحث جزئي)',
         },
         note: 'افتراضيًا يُرجع مصفوفة مباشرة في الجذر. استخدم ?format=object للغلاف. ملف المريض يكتشف النوع تلقائيًا: UUID ← هاتف ← اسم.',
+        hint: 'للبحث عن مريض استخدم ?q=<الاسم أو الهاتف أو المعرّف> — مثال: /patients?q=زياد أو /patients?q=0124478545',
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     );
