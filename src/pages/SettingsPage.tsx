@@ -329,6 +329,60 @@ export function SettingsPage({
             </div>
           </div>
 
+          {/* Booking endpoint — create appointment */}
+          <div className="rounded-xl border-2 border-teal-200 bg-teal-50/50 p-4">
+            <div className="mb-2 flex items-center gap-2">
+              <Code2 className="h-4 w-4 text-teal-600" />
+              <h4 className="text-sm font-bold text-slate-800">إنشاء حجز جديد (POST)</h4>
+              <span className="badge bg-amber-100 text-amber-700 ring-amber-300">POST</span>
+              <span className="badge bg-teal-100 text-teal-700 ring-teal-300">جديد</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <input value={`${apiUrl}/bookings`} readOnly dir="ltr" className="input flex-1 font-mono text-xs" />
+              <button onClick={() => copyText(`${apiUrl}/bookings`, 'bookings')} className="btn-secondary whitespace-nowrap">
+                {copied === 'bookings' ? <CheckCircle2 className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}
+                نسخ
+              </button>
+            </div>
+            <p className="mt-2 text-xs text-slate-600">
+              ينشئ حجزًا جديدًا بـ JSON في الجسم. يكتشف المريض والخدمة تلقائيًا (UUID ← هاتف ← اسم للبحث الجزئي)، يحسب وقت النهاية من مدة الخدمة، ويرفض التعارض.
+            </p>
+            <div className="mt-2 rounded-lg bg-white p-2.5 text-xs text-slate-600">
+              <span className="font-bold text-slate-700">الحقول المطلوبة:</span>
+              <ul className="mt-1 list-inside list-disc space-y-0.5">
+                <li><code className="rounded bg-slate-100 px-1" dir="ltr">patient</code> — اسم أو رقم هاتف أو معرّف المريض</li>
+                <li><code className="rounded bg-slate-100 px-1" dir="ltr">service</code> — اسم أو معرّف الخدمة (بحث جزئي)</li>
+                <li><code className="rounded bg-slate-100 px-1" dir="ltr">start_time</code> — تاريخ ووقت (ISO 8601 أو عربي مثل "غدًا 10 صباحًا")</li>
+              </ul>
+              <span className="mt-2 block font-bold text-slate-700">حقول اختيارية:</span>
+              <ul className="mt-1 list-inside list-disc space-y-0.5">
+                <li><code className="rounded bg-slate-100 px-1" dir="ltr">notes</code> — ملاحظات</li>
+                <li><code className="rounded bg-slate-100 px-1" dir="ltr">status</code> — scheduled (افتراضي) / confirmed / completed / cancelled / no_show</li>
+                <li><code className="rounded bg-slate-100 px-1" dir="ltr">auto_create_patient</code> — <code className="rounded bg-slate-100 px-1">true</code> لإنشاء مريض جديد إن لم يُوجد</li>
+                <li><code className="rounded bg-slate-100 px-1" dir="ltr">patient_phone</code> — رقم الهاتف (يُستخدم مع auto_create)</li>
+              </ul>
+            </div>
+            <div className="mt-2 rounded-lg bg-slate-900 p-2.5 text-[11px] text-slate-200" dir="ltr">
+              <p className="text-slate-400">// مثال (مريض موجود):</p>
+              <pre className="overflow-x-auto whitespace-pre">{`POST /bookings
+{
+  "patient": "زياد",
+  "service": "تنظيف",
+  "start_time": "2026-10-26T10:00:00",
+  "notes": "أول زيارة"
+}`}</pre>
+              <p className="mt-2 text-slate-400">// مثال (إنشاء مريض جديد):</p>
+              <pre className="overflow-x-auto whitespace-pre">{`POST /bookings
+{
+  "patient": "محمد علي",
+  "patient_phone": "01234567890",
+  "service": "حشو",
+  "start_time": "غدا 12 ظهرا",
+  "auto_create_patient": true
+}`}</pre>
+            </div>
+          </div>
+
           {/* Example response */}
           <div className="rounded-xl bg-slate-900 p-4 text-xs text-slate-200" dir="ltr">
             <p className="mb-2 font-bold text-slate-400">// مثال /services (مصفوفة مباشرة في الجذر):</p>
@@ -348,33 +402,31 @@ export function SettingsPage({
     "price": 300
   }
 ]`}</pre>
-            <p className="mt-3 mb-2 font-bold text-slate-400">// مثال /patients/&lt;id&gt; (ملف مريض):</p>
+            <p className="mt-3 mb-2 font-bold text-slate-400">// مثال /patients?q=... (ملف مريض):</p>
             <pre className="overflow-x-auto whitespace-pre text-[11px] leading-relaxed">{`{
-  "id": "a11f536d-...",
-  "name": "أحمد محمد",
-  "phone": "0551234567",
-  "email": null,
+  "id": "54685b19-...",
+  "name": "زياد",
+  "phone": "0124478545",
   "gender": "ذكر",
-  "birth_date": "1990-04-12",
-  "age": 35,
-  "address": null,
-  "notes": "حساسية من البنسلين",
-  "registered_at": "2026-10-25T04:50:00Z",
-  "summary": {
-    "appointments_count": 3,
-    "last_visit": "2026-10-20T10:00:00Z",
-    "last_status": "completed",
-    "total_billed": 1500,
-    "total_paid": 1500,
-    "outstanding": 0,
-    "invoices_count": 2
-  },
-  "recent_appointments": [
-    { "id": "...", "date": "2026-10-20T10:00:00Z", "status": "completed", "service": "تنظيف الأسنان", "notes": null }
-  ],
-  "recent_invoices": [
-    { "id": "...", "issued_at": "2026-10-20T10:30:00Z", "total": 250, "paid": 250, "status": "paid" }
-  ]
+  "age": 26,
+  "summary": { "appointments_count": 3, "outstanding": 0 },
+  "recent_appointments": [...],
+  "recent_invoices": [...]
+}`}</pre>
+            <p className="mt-3 mb-2 font-bold text-slate-400">// مثال POST /bookings (استجابة الحجز):</p>
+            <pre className="overflow-x-auto whitespace-pre text-[11px] leading-relaxed">{`{
+  "ok": true,
+  "appointment": {
+    "id": "51f98f84-...",
+    "patient_id": "54685b19-...",
+    "patient_name": "زياد",
+    "service_id": "c6e2e96b-...",
+    "service_name": "تنظيف الأسنان",
+    "start_time": "2026-10-26T10:00:00Z",
+    "end_time": "2026-10-26T10:45:00Z",
+    "status": "scheduled",
+    "notes": "أول زيارة"
+  }
 }`}</pre>
           </div>
 
@@ -383,8 +435,8 @@ export function SettingsPage({
             <p className="mb-2 font-bold text-slate-800">طريقة الاستخدام في n8n:</p>
             <ol className="list-inside list-decimal space-y-1 text-xs text-slate-600">
               <li>أضف عقدة <strong>HTTP Request</strong> في الـ workflow</li>
-              <li>اضبط الـ Method على <code className="rounded bg-white px-1">GET</code></li>
-              <li>الصق عنوان <code className="rounded bg-white px-1" dir="ltr">.../clinic-api/services</code> في حقل URL</li>
+              <li>للسحب: Method = <code className="rounded bg-white px-1">GET</code>، URL = <code className="rounded bg-white px-1" dir="ltr">.../services</code> أو <code className="rounded bg-white px-1" dir="ltr">.../patients</code></li>
+              <li>للحجز: Method = <code className="rounded bg-white px-1">POST</code>، URL = <code className="rounded bg-white px-1" dir="ltr">.../bookings</code>، Body = JSON</li>
               <li>لا حاجة لمفاتيح أو مصادقة — الـ API عام ومفتوح</li>
               <li>ستجد البيانات في <code className="rounded bg-white px-1">$json</code> (مصفوفة مباشرة)</li>
               <li>لملف مريض مفرد: <code className="rounded bg-white px-1" dir="ltr">.../patients?q=&lt;الاسم أو الهاتف&gt;</code> — URL واحد يكتشف النوع تلقائيًا</li>
