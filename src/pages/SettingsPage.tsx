@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Save, Webhook, Activity, Send, CheckCircle2, XCircle, Clock } from 'lucide-react';
+import { Save, Webhook, Activity, Send, CheckCircle2, XCircle, Clock, Code2, Copy, Server } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import type { Settings, WebhookEvent } from '../lib/types';
 import { formatDateTime } from '../lib/helpers';
@@ -20,7 +20,15 @@ export function SettingsPage({
   const [testResult, setTestResult] = useState<string | null>(null);
   const [events, setEvents] = useState<WebhookEvent[]>([]);
   const [loadingEvents, setLoadingEvents] = useState(true);
-  const [tab, setTab] = useState<'clinic' | 'webhook' | 'log'>('clinic');
+  const [tab, setTab] = useState<'clinic' | 'webhook' | 'api' | 'log'>('clinic');
+  const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/clinic-api`;
+  const [copied, setCopied] = useState<string | null>(null);
+
+  const copyText = (text: string, label: string) => {
+    navigator.clipboard?.writeText(text);
+    setCopied(label);
+    setTimeout(() => setCopied(null), 1500);
+  };
 
   useEffect(() => {
     setForm(settings);
@@ -128,6 +136,7 @@ export function SettingsPage({
   const tabs = [
     { id: 'clinic' as const, label: 'بيانات العيادة' },
     { id: 'webhook' as const, label: 'تكامل n8n' },
+    { id: 'api' as const, label: 'واجهة API' },
     { id: 'log' as const, label: 'سجل الأحداث' },
   ];
 
@@ -229,6 +238,101 @@ export function SettingsPage({
               <li><code className="rounded bg-white px-1.5 py-0.5">invoice.created</code> — عند إنشاء فاتورة</li>
               <li><code className="rounded bg-white px-1.5 py-0.5">invoice.paid</code> — عند سداد فاتورة</li>
             </ul>
+          </div>
+        </div>
+      )}
+
+      {tab === 'api' && (
+        <div className="card max-w-3xl space-y-5 p-6">
+          <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
+            <Server className="h-5 w-5 text-teal-600" />
+            <h3 className="text-base font-bold text-slate-800">واجهة برمجية (API) لسحب البيانات من n8n</h3>
+          </div>
+          <div className="rounded-xl bg-blue-50 p-4 text-sm text-blue-800 ring-1 ring-blue-200">
+            استخدم هذه العناوين داخل عقدة HTTP Request في n8n لسحب بيانات الخدمات والمرضى مباشرةً من قاعدة بيانات العيادة. كل الطلبات بصيغة <code className="rounded bg-white px-1">GET</code> وتُرجع JSON.
+          </div>
+
+          {/* Base URL */}
+          <div>
+            <label className="label">عنوان الأساسي للـ API</label>
+            <div className="flex items-center gap-2">
+              <input value={apiUrl} readOnly dir="ltr" className="input flex-1 font-mono text-xs" />
+              <button onClick={() => copyText(apiUrl, 'base')} className="btn-secondary whitespace-nowrap">
+                {copied === 'base' ? <CheckCircle2 className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}
+                نسخ
+              </button>
+            </div>
+          </div>
+
+          {/* Services endpoint */}
+          <div className="rounded-xl border border-slate-200 p-4">
+            <div className="mb-2 flex items-center gap-2">
+              <Code2 className="h-4 w-4 text-teal-600" />
+              <h4 className="text-sm font-bold text-slate-800">سحب كل الخدمات</h4>
+              <span className="badge bg-emerald-50 text-emerald-700 ring-emerald-200">GET</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <input value={`${apiUrl}/services`} readOnly dir="ltr" className="input flex-1 font-mono text-xs" />
+              <button onClick={() => copyText(`${apiUrl}/services`, 'services')} className="btn-secondary whitespace-nowrap">
+                {copied === 'services' ? <CheckCircle2 className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}
+                نسخ
+              </button>
+            </div>
+            <p className="mt-2 text-xs text-slate-500">يُرجع قائمة بكل خدمات العيادة مع الاسم، السعر، المدة، التصنيف.</p>
+            <div className="mt-2 rounded-lg bg-slate-50 p-2.5 text-xs text-slate-600" dir="ltr">
+              <span className="text-slate-400"># معاملات اختيارية:</span><br />
+              ?category=cleaning &nbsp; ?q=تنظيف &nbsp; ?limit=50
+            </div>
+          </div>
+
+          {/* Patients endpoint */}
+          <div className="rounded-xl border border-slate-200 p-4">
+            <div className="mb-2 flex items-center gap-2">
+              <Code2 className="h-4 w-4 text-teal-600" />
+              <h4 className="text-sm font-bold text-slate-800">سحب قائمة المرضى</h4>
+              <span className="badge bg-emerald-50 text-emerald-700 ring-emerald-200">GET</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <input value={`${apiUrl}/patients`} readOnly dir="ltr" className="input flex-1 font-mono text-xs" />
+              <button onClick={() => copyText(`${apiUrl}/patients`, 'patients')} className="btn-secondary whitespace-nowrap">
+                {copied === 'patients' ? <CheckCircle2 className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}
+                نسخ
+              </button>
+            </div>
+            <p className="mt-2 text-xs text-slate-500">يُرجع قائمة المرضى (الاسم، الهاتف، الجنس).</p>
+          </div>
+
+          {/* Example response */}
+          <div className="rounded-xl bg-slate-900 p-4 text-xs text-slate-200" dir="ltr">
+            <p className="mb-2 font-bold text-slate-400">// مثال الاستجابة من /services:</p>
+            <pre className="overflow-x-auto whitespace-pre text-[11px] leading-relaxed">{`{
+  "ok": true,
+  "count": 8,
+  "services": [
+    {
+      "id": "uuid",
+      "name": "تنظيف الأسنان",
+      "description": "إزالة الجير وتلميع الأسنان",
+      "duration_min": 45,
+      "duration_label": "45 دقيقة",
+      "price": 250,
+      "price_label": "250.00 ر.س",
+      "category": "cleaning"
+    }
+  ]
+}`}</pre>
+          </div>
+
+          {/* n8n setup instructions */}
+          <div className="rounded-xl bg-slate-50 p-4 text-sm text-slate-700">
+            <p className="mb-2 font-bold text-slate-800">طريقة الاستخدام في n8n:</p>
+            <ol className="list-inside list-decimal space-y-1 text-xs text-slate-600">
+              <li>أضف عقدة <strong>HTTP Request</strong> في الـ workflow</li>
+              <li>اضبط الـ Method على <code className="rounded bg-white px-1">GET</code></li>
+              <li>الصق عنوان <code className="rounded bg-white px-1" dir="ltr">.../clinic-api/services</code> في حقل URL</li>
+              <li>لا حاجة لمفاتيح أو مصادقة — الـ API عام ومفتوح</li>
+              <li>ستجد البيانات في <code className="rounded bg-white px-1">$json.services</code></li>
+            </ol>
           </div>
         </div>
       )}

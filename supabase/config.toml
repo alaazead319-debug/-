@@ -2,3 +2,6 @@
 
 [functions.n8n-proxy]
 verify_jwt = false
+
+[functions.clinic-api]
+verify_jwt = false
