@@ -285,7 +285,7 @@ export function SettingsPage({
             </div>
           </div>
 
-          {/* Patients endpoint */}
+          {/* Patients list endpoint */}
           <div className="rounded-xl border border-slate-200 p-4">
             <div className="mb-2 flex items-center gap-2">
               <Code2 className="h-4 w-4 text-teal-600" />
@@ -299,26 +299,92 @@ export function SettingsPage({
                 نسخ
               </button>
             </div>
-            <p className="mt-2 text-xs text-slate-500">يُرجع قائمة المرضى (الاسم، الهاتف، الجنس).</p>
+            <p className="mt-2 text-xs text-slate-500">يُرجع قائمة المرضى (الاسم، الهاتف، الجنس) كمصفوفة مباشرة في الجذر.</p>
+          </div>
+
+          {/* Patient file endpoint — minimal for AI agent */}
+          <div className="rounded-xl border-2 border-teal-200 bg-teal-50/50 p-4">
+            <div className="mb-2 flex items-center gap-2">
+              <Code2 className="h-4 w-4 text-teal-600" />
+              <h4 className="text-sm font-bold text-slate-800">ملف مريض مفرد (للوكيل الذكي)</h4>
+              <span className="badge bg-teal-100 text-teal-700 ring-teal-300">جديد</span>
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <input value={`${apiUrl}/patients/<ID>`} readOnly dir="ltr" className="input flex-1 font-mono text-xs" />
+                <button onClick={() => copyText(`${apiUrl}/patients/<ID>`, 'pf-id')} className="btn-secondary whitespace-nowrap">
+                  {copied === 'pf-id' ? <CheckCircle2 className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}
+                  نسخ
+                </button>
+              </div>
+              <div className="flex items-center gap-2">
+                <input value={`${apiUrl}/patients/<phone>?by=phone`} readOnly dir="ltr" className="input flex-1 font-mono text-xs" />
+                <button onClick={() => copyText(`${apiUrl}/patients/<phone>?by=phone`, 'pf-phone')} className="btn-secondary whitespace-nowrap">
+                  {copied === 'pf-phone' ? <CheckCircle2 className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}
+                  نسخ
+                </button>
+              </div>
+              <div className="flex items-center gap-2">
+                <input value={`${apiUrl}/patients/<name>?by=name`} readOnly dir="ltr" className="input flex-1 font-mono text-xs" />
+                <button onClick={() => copyText(`${apiUrl}/patients/<name>?by=name`, 'pf-name')} className="btn-secondary whitespace-nowrap">
+                  {copied === 'pf-name' ? <CheckCircle2 className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}
+                  نسخ
+                </button>
+              </div>
+            </div>
+            <p className="mt-2 text-xs text-slate-600">
+              يُرجع ملفًا مختصرًا لمريض واحد: بياناته الشخصية + ملخص (عدد المواعيد، آخر زيارة، المبالغ، المتبقي) + آخر 5 مواعيد و5 فواتير. مثالي لوكيل الذكاء الاصطناعي.
+            </p>
+            <div className="mt-2 text-xs text-slate-500">
+              <code className="rounded bg-white px-1" dir="ltr">by=id</code> (افتراضي) · <code className="rounded bg-white px-1" dir="ltr">by=phone</code> · <code className="rounded bg-white px-1" dir="ltr">by=name</code> (بحث جزئي)
+            </div>
           </div>
 
           {/* Example response */}
           <div className="rounded-xl bg-slate-900 p-4 text-xs text-slate-200" dir="ltr">
-            <p className="mb-2 font-bold text-slate-400">// مثال الاستجابة من /services:</p>
+            <p className="mb-2 font-bold text-slate-400">// مثال /services (مصفوفة مباشرة في الجذر):</p>
+            <pre className="overflow-x-auto whitespace-pre text-[11px] leading-relaxed">{`[
+  {
+    "id": "a11f536d-...",
+    "name": "تنظيف الأسنان",
+    "description": "إزالة الجير وتلميع الأسنان",
+    "duration_min": 45,
+    "price": 250
+  },
+  {
+    "id": "b32e280f-...",
+    "name": "حشو تجويف",
+    "description": "حشو مركب لتسوس الأسنان",
+    "duration_min": 60,
+    "price": 300
+  }
+]`}</pre>
+            <p className="mt-3 mb-2 font-bold text-slate-400">// مثال /patients/&lt;id&gt; (ملف مريض):</p>
             <pre className="overflow-x-auto whitespace-pre text-[11px] leading-relaxed">{`{
-  "ok": true,
-  "count": 8,
-  "services": [
-    {
-      "id": "uuid",
-      "name": "تنظيف الأسنان",
-      "description": "إزالة الجير وتلميع الأسنان",
-      "duration_min": 45,
-      "duration_label": "45 دقيقة",
-      "price": 250,
-      "price_label": "250.00 ر.س",
-      "category": "cleaning"
-    }
+  "id": "a11f536d-...",
+  "name": "أحمد محمد",
+  "phone": "0551234567",
+  "email": null,
+  "gender": "ذكر",
+  "birth_date": "1990-04-12",
+  "age": 35,
+  "address": null,
+  "notes": "حساسية من البنسلين",
+  "registered_at": "2026-10-25T04:50:00Z",
+  "summary": {
+    "appointments_count": 3,
+    "last_visit": "2026-10-20T10:00:00Z",
+    "last_status": "completed",
+    "total_billed": 1500,
+    "total_paid": 1500,
+    "outstanding": 0,
+    "invoices_count": 2
+  },
+  "recent_appointments": [
+    { "id": "...", "date": "2026-10-20T10:00:00Z", "status": "completed", "service": "تنظيف الأسنان", "notes": null }
+  ],
+  "recent_invoices": [
+    { "id": "...", "issued_at": "2026-10-20T10:30:00Z", "total": 250, "paid": 250, "status": "paid" }
   ]
 }`}</pre>
           </div>
@@ -331,7 +397,8 @@ export function SettingsPage({
               <li>اضبط الـ Method على <code className="rounded bg-white px-1">GET</code></li>
               <li>الصق عنوان <code className="rounded bg-white px-1" dir="ltr">.../clinic-api/services</code> في حقل URL</li>
               <li>لا حاجة لمفاتيح أو مصادقة — الـ API عام ومفتوح</li>
-              <li>ستجد البيانات في <code className="rounded bg-white px-1">$json.services</code></li>
+              <li>ستجد البيانات في <code className="rounded bg-white px-1">$json</code> (مصفوفة مباشرة)</li>
+              <li>لملف مريض مفرد: <code className="rounded bg-white px-1" dir="ltr">.../patients/&lt;id&gt;</code></li>
             </ol>
           </div>
         </div>
