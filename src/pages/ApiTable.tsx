@@ -294,6 +294,20 @@ export function ApiTable({ settings }: { settings: Settings | null }) {
         )}
       </div>
 
+      {/* n8n rows hint */}
+      <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
+        <p className="mb-1.5 font-bold text-emerald-800">لإدخال البيانات في Google Sheets داخل n8n:</p>
+        <p className="mb-2 text-xs">الاستجابة من الـ API تحتوي حقل <code className="rounded bg-white px-1.5 py-0.5" dir="ltr">rows</code> — وهو مصفوفة صفوف جاهزة للصق مباشرة: أول صف = عناوين الأعمدة، وبعده صفوف القيم.</p>
+        <pre className="overflow-x-auto rounded-lg bg-emerald-900/90 p-3 text-[11px] text-emerald-100" dir="ltr">{`{
+  "rows": [
+    ["#", "الاسم", "الوصف", "التصنيف", "المدة", "السعر"],
+    [1, "تنظيف الأسنان", "إزالة الجير", "cleaning", 45, 250],
+    [2, "حشو تجويف", "حشو مركب", "restoration", 60, 300]
+  ]
+}`}</pre>
+        <p className="mt-2 text-xs">في عقدة <strong>Google Sheets → Append Row</strong> داخل n8n، اضبط القيمة على <code className="rounded bg-white px-1.5 py-0.5" dir="ltr">{`{{ $json.rows }}`}</code> ليتم لصق كل الصفوف دفعة واحدة.</p>
+      </div>
+
       {/* Footer note */}
       <div className="rounded-xl bg-slate-100 p-4 text-xs text-slate-600">
         <p className="mb-1 font-bold text-slate-700">هذا الجدول مرتبط مباشرة بقاعدة بيانات العيادة:</p>
@@ -301,6 +315,7 @@ export function ApiTable({ settings }: { settings: Settings | null }) {
           <li>أي خدمة أو مريض جديد يُضاف من صفحات النظام يظهر هنا فورًا عند التحديث.</li>
           <li>استخدم زر "نسخ الرابط" للحصول على عنوان الـ API للاستخدام داخل n8n.</li>
           <li>زر "CSV" يصدّر الجدول المعروض حاليًا كملف Excel/CSV.</li>
+          <li>الاستجابة تحتوي <code className="rounded bg-white px-1 px-1" dir="ltr">rows</code> (صفوف جاهزة) و<code className="rounded bg-white px-1" dir="ltr">services</code>/<code className="rounded bg-white px-1" dir="ltr">patients</code> (كائنات JSON).</li>
         </ul>
       </div>
     </div>

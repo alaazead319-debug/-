@@ -16,6 +16,39 @@ interface ServiceRow {
   created_at: string;
 }
 
+interface PatientRow {
+  id: string;
+  name: string;
+  phone: string | null;
+  gender: string;
+}
+
+// ---- Google-Sheets-compatible column layouts ----
+// First element = header row, then one array per data row.
+const SERVICE_COLUMNS = ['#', 'الاسم', 'الوصف', 'التصنيف', 'المدة (دقيقة)', 'السعر (ر.س)', 'تاريخ الإنشاء'];
+const PATIENT_COLUMNS = ['#', 'الاسم', 'الهاتف', 'الجنس'];
+
+function serviceToRow(s: ServiceRow, i: number): unknown[] {
+  return [
+    i + 1,
+    s.name,
+    s.description ?? '',
+    s.category,
+    s.duration_min,
+    Number(s.price),
+    s.created_at,
+  ];
+}
+
+function patientToRow(p: PatientRow, i: number): unknown[] {
+  return [
+    i + 1,
+    p.name,
+    p.phone ?? '',
+    p.gender,
+  ];
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { status: 200, headers: corsHeaders });
@@ -35,16 +68,15 @@ Deno.serve(async (req: Request) => {
     );
 
     const url = new URL(req.url);
-    // Route: /clinic-api/services  (the function name prefix is added by the platform)
     const pathname = url.pathname.replace(/\/$/, '');
     const segments = pathname.split('/').filter(Boolean);
     const resource = segments[segments.length - 1] ?? 'services';
 
-    // ----- /services : list all services (optionally filtered by category) -----
+    // ----- /services -----
     if (resource === 'services') {
       const category = url.searchParams.get('category');
       const q = url.searchParams.get('q');
-      const limit = Math.min(Number(url.searchParams.get('limit') ?? '200'), 500);
+      const limit = Math.min(Number(url.searchParams.get('limit') ?? '500'), 1000);
 
       let query = supabase.from('services').select('*').order('name', { ascending: true }).limit(limit);
       if (category) query = query.eq('category', category);
@@ -59,10 +91,20 @@ Deno.serve(async (req: Request) => {
       }
 
       const services = (data as ServiceRow[]) ?? [];
+      const rows: unknown[][] = [
+        SERVICE_COLUMNS,
+        ...services.map((s, i) => serviceToRow(s, i)),
+      ];
+
       return new Response(
         JSON.stringify({
           ok: true,
+          resource: 'services',
           count: services.length,
+          columns: SERVICE_COLUMNS,
+          // Array-of-rows, sheets-ready: first row is headers, then data rows.
+          rows,
+          // Same data as objects, for n8n nodes that prefer JSON objects.
           services: services.map((s) => ({
             id: s.id,
             name: s.name,
@@ -79,7 +121,7 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // ----- /patients : list patients (name + phone only) -----
+    // ----- /patients -----
     if (resource === 'patients') {
       const { data, error } = await supabase
         .from('patients')
@@ -91,8 +133,21 @@ Deno.serve(async (req: Request) => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
+      const patients = (data as PatientRow[]) ?? [];
+      const rows: unknown[][] = [
+        PATIENT_COLUMNS,
+        ...patients.map((p, i) => patientToRow(p, i)),
+      ];
+
       return new Response(
-        JSON.stringify({ ok: true, count: (data ?? []).length, patients: data ?? [] }),
+        JSON.stringify({
+          ok: true,
+          resource: 'patients',
+          count: patients.length,
+          columns: PATIENT_COLUMNS,
+          rows,
+          patients,
+        }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }
@@ -104,6 +159,7 @@ Deno.serve(async (req: Request) => {
           services: 'GET /functions/v1/clinic-api/services?category=&q=&limit=',
           patients: 'GET /functions/v1/clinic-api/patients',
         },
+        note: 'الاستجابة تحتوي على حقل rows (صفوف جدول جاهزة للصق في Google Sheets داخل n8n)',
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     );
