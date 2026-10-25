@@ -7,6 +7,7 @@ const TITLES: Record<Route, string> = {
   appointments: 'إدارة المواعيد',
   services: 'إدارة الخدمات',
   invoices: 'إدارة الفواتير',
+  api: 'جدول البيانات (API)',
   settings: 'الإعدادات',
 };
 

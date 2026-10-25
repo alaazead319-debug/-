@@ -1,4 +1,4 @@
-import { LayoutDashboard, Users, CalendarDays, Stethoscope, Receipt, Settings as SettingsIcon, X, Smile } from 'lucide-react';
+import { LayoutDashboard, Users, CalendarDays, Stethoscope, Receipt, Settings as SettingsIcon, X, Smile, Table2 } from 'lucide-react';
 import type { Route } from '../App';
 
 const NAV: { route: Route; label: string; icon: typeof Users }[] = [
@@ -7,6 +7,7 @@ const NAV: { route: Route; label: string; icon: typeof Users }[] = [
   { route: 'appointments', label: 'المواعيد', icon: CalendarDays },
   { route: 'services', label: 'الخدمات', icon: Stethoscope },
   { route: 'invoices', label: 'الفواتير', icon: Receipt },
+  { route: 'api', label: 'جدول البيانات (API)', icon: Table2 },
   { route: 'settings', label: 'الإعدادات', icon: SettingsIcon },
 ];
 

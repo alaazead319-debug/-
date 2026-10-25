@@ -9,14 +9,15 @@ import { Appointments } from './pages/Appointments';
 import { Services } from './pages/Services';
 import { Invoices } from './pages/Invoices';
 import { SettingsPage } from './pages/SettingsPage';
+import { ApiTable } from './pages/ApiTable';
 import { ToastProvider } from './components/Toast';
 
-export type Route = 'dashboard' | 'patients' | 'appointments' | 'services' | 'invoices' | 'settings';
+export type Route = 'dashboard' | 'patients' | 'appointments' | 'services' | 'invoices' | 'api' | 'settings';
 
 export default function App() {
   const [route, setRoute] = useState<Route>(() => {
     const hash = window.location.hash.replace('#/', '') as Route;
-    return (['dashboard', 'patients', 'appointments', 'services', 'invoices', 'settings'] as Route[]).includes(hash)
+    return (['dashboard', 'patients', 'appointments', 'services', 'invoices', 'api', 'settings'] as Route[]).includes(hash)
       ? hash
       : 'dashboard';
   });
@@ -26,7 +27,7 @@ export default function App() {
   useEffect(() => {
     const onHash = () => {
       const hash = window.location.hash.replace('#/', '') as Route;
-      if ((['dashboard', 'patients', 'appointments', 'services', 'invoices', 'settings'] as Route[]).includes(hash)) {
+      if ((['dashboard', 'patients', 'appointments', 'services', 'invoices', 'api', 'settings'] as Route[]).includes(hash)) {
         setRoute(hash);
       } else {
         setRoute('dashboard');
@@ -65,6 +66,8 @@ export default function App() {
         return <Services />;
       case 'invoices':
         return <Invoices />;
+      case 'api':
+        return <ApiTable settings={settings} />;
       case 'settings':
         return <SettingsPage settings={settings} setSettings={setSettings} />;
     }
