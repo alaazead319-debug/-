@@ -302,40 +302,13 @@ export function SettingsPage({
             <p className="mt-2 text-xs text-slate-500">يُرجع قائمة المرضى (الاسم، الهاتف، الجنس) كمصفوفة مباشرة في الجذر.</p>
           </div>
 
-          {/* Patient file endpoint — minimal for AI agent */}
+          {/* Booking endpoint — register patient + book appointment */}
           <div className="rounded-xl border-2 border-teal-200 bg-teal-50/50 p-4">
             <div className="mb-2 flex items-center gap-2">
               <Code2 className="h-4 w-4 text-teal-600" />
-              <h4 className="text-sm font-bold text-slate-800">ملف مريض مفرد (للوكيل الذكي)</h4>
-              <span className="badge bg-teal-100 text-teal-700 ring-teal-300">URL واحد</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <input value={`${apiUrl}/patients?q=<الاسم أو الهاتف أو المعرّف>`} readOnly dir="ltr" className="input flex-1 font-mono text-xs" />
-              <button onClick={() => copyText(`${apiUrl}/patients?q=<الاسم أو الهاتف أو المعرّف>`, 'pf')} className="btn-secondary whitespace-nowrap">
-                {copied === 'pf' ? <CheckCircle2 className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}
-                نسخ
-              </button>
-            </div>
-            <p className="mt-2 text-xs text-slate-600">
-              يُرجع ملفًا مختصرًا لمريض واحد: بياناته الشخصية + ملخص (عدد المواعيد، آخر زيارة، المبالغ، المتبقي) + آخر 5 مواعيد و5 فواتير. مثالي لوكيل الذكاء الاصطناعي.
-            </p>
-            <div className="mt-2 rounded-lg bg-white p-2.5 text-xs text-slate-600">
-              <span className="font-bold text-slate-700">URL واحد يكتشف النوع تلقائيًا:</span>
-              <ul className="mt-1 list-inside list-disc space-y-0.5">
-                <li>اسم: <code className="rounded bg-slate-100 px-1" dir="ltr">/patients?q=زياد</code> (بحث جزئي، يدعم العربي)</li>
-                <li>هاتف: <code className="rounded bg-slate-100 px-1" dir="ltr">/patients?q=0124478545</code></li>
-                <li>معرّف: <code className="rounded bg-slate-100 px-1" dir="ltr">/patients?q=54685b19-...</code></li>
-              </ul>
-            </div>
-          </div>
-
-          {/* Booking endpoint — create appointment */}
-          <div className="rounded-xl border-2 border-teal-200 bg-teal-50/50 p-4">
-            <div className="mb-2 flex items-center gap-2">
-              <Code2 className="h-4 w-4 text-teal-600" />
-              <h4 className="text-sm font-bold text-slate-800">إنشاء حجز جديد (POST)</h4>
+              <h4 className="text-sm font-bold text-slate-800">تسجيل مريض + حجز ميعاد</h4>
               <span className="badge bg-amber-100 text-amber-700 ring-amber-300">POST</span>
-              <span className="badge bg-teal-100 text-teal-700 ring-teal-300">جديد</span>
+              <span className="badge bg-teal-100 text-teal-700 ring-teal-300">رئيسي</span>
             </div>
             <div className="flex items-center gap-2">
               <input value={`${apiUrl}/bookings`} readOnly dir="ltr" className="input flex-1 font-mono text-xs" />
@@ -345,40 +318,59 @@ export function SettingsPage({
               </button>
             </div>
             <p className="mt-2 text-xs text-slate-600">
-              ينشئ حجزًا جديدًا بـ JSON في الجسم. يكتشف المريض والخدمة تلقائيًا (UUID ← هاتف ← اسم للبحث الجزئي)، يحسب وقت النهاية من مدة الخدمة، ويرفض التعارض.
+              ينشئ المريض في السجل إن لم يكن موجودًا (يطابق بالهاتف أولًا ثم بالاسم)، يحجز الميعاد، ويتحقق أن الميعاد فاضي على مستوى العيادة كلها مع <strong>ساعة فاصلة</strong> قبل وبعد كل ميعاد. لو فيه أي حجز قريب من الميعاد المطلوب بأقل من ساعة، يُرفض الحجز.
             </p>
             <div className="mt-2 rounded-lg bg-white p-2.5 text-xs text-slate-600">
               <span className="font-bold text-slate-700">الحقول المطلوبة:</span>
               <ul className="mt-1 list-inside list-disc space-y-0.5">
-                <li><code className="rounded bg-slate-100 px-1" dir="ltr">patient</code> — اسم أو رقم هاتف أو معرّف المريض</li>
+                <li><code className="rounded bg-slate-100 px-1" dir="ltr">patient_name</code> — اسم المريض</li>
                 <li><code className="rounded bg-slate-100 px-1" dir="ltr">service</code> — اسم أو معرّف الخدمة (بحث جزئي)</li>
                 <li><code className="rounded bg-slate-100 px-1" dir="ltr">start_time</code> — تاريخ ووقت (ISO 8601 أو عربي مثل "غدًا 10 صباحًا")</li>
               </ul>
               <span className="mt-2 block font-bold text-slate-700">حقول اختيارية:</span>
               <ul className="mt-1 list-inside list-disc space-y-0.5">
-                <li><code className="rounded bg-slate-100 px-1" dir="ltr">notes</code> — ملاحظات</li>
-                <li><code className="rounded bg-slate-100 px-1" dir="ltr">status</code> — scheduled (افتراضي) / confirmed / completed / cancelled / no_show</li>
-                <li><code className="rounded bg-slate-100 px-1" dir="ltr">auto_create_patient</code> — <code className="rounded bg-slate-100 px-1">true</code> لإنشاء مريض جديد إن لم يُوجد</li>
-                <li><code className="rounded bg-slate-100 px-1" dir="ltr">patient_phone</code> — رقم الهاتف (يُستخدم مع auto_create)</li>
+                <li><code className="rounded bg-slate-100 px-1" dir="ltr">patient_phone</code> — رقم الهاتف (للمطابقة أو إنشاء المريض)</li>
+                <li><code className="rounded bg-slate-100 px-1" dir="ltr">notes</code> — ملاحظات على الحجز</li>
               </ul>
             </div>
+            <div className="mt-2 rounded-lg bg-amber-50 border border-amber-200 p-2.5 text-xs text-amber-800">
+              <strong>قاعدة الميعاد:</strong> بين كل ميعاد في العيادة ساعة فاصلة على الأقل قبل وبعد. لو الميعاد المطلوب أقل من ساعة من أي حجز آخر، هيُرفض برسالة "الميعاد مش متاح".
+            </div>
             <div className="mt-2 rounded-lg bg-slate-900 p-2.5 text-[11px] text-slate-200" dir="ltr">
-              <p className="text-slate-400">// مثال (مريض موجود):</p>
+              <p className="text-slate-400">// مثال (مريض موجود بالفعل):</p>
               <pre className="overflow-x-auto whitespace-pre">{`POST /bookings
 {
-  "patient": "زياد",
+  "patient_name": "زياد",
+  "patient_phone": "0124478545",
   "service": "تنظيف",
-  "start_time": "2026-10-26T10:00:00",
-  "notes": "أول زيارة"
+  "start_time": "2026-10-26T10:00:00"
 }`}</pre>
-              <p className="mt-2 text-slate-400">// مثال (إنشاء مريض جديد):</p>
+              <p className="mt-2 text-slate-400">// مثال (مريض جديد — يُسجل تلقائيًا):</p>
               <pre className="overflow-x-auto whitespace-pre">{`POST /bookings
 {
-  "patient": "محمد علي",
+  "patient_name": "محمد علي",
   "patient_phone": "01234567890",
   "service": "حشو",
   "start_time": "غدا 12 ظهرا",
-  "auto_create_patient": true
+  "notes": "أول زيارة"
+}`}</pre>
+              <p className="mt-2 text-slate-400">// استجابة (تم الحجز):</p>
+              <pre className="overflow-x-auto whitespace-pre">{`{
+  "ok": true,
+  "patient": { "id": "...", "name": "زياد", "phone": "0124478545" },
+  "appointment": {
+    "id": "...",
+    "service_name": "تنظيف الأسنان",
+    "start_time": "2026-10-26T10:00:00Z",
+    "end_time": "2026-10-26T10:45:00Z",
+    "status": "scheduled"
+  }
+}`}</pre>
+              <p className="mt-2 text-slate-400">// استجابة (الميعاد مش متاح):</p>
+              <pre className="overflow-x-auto whitespace-pre">{`{
+  "error": "الميعاد مش متاح — يوجد حجز آخر قريب...",
+  "requested_slot": { "start_time": "...", "end_time": "..." },
+  "conflicting_appointment": { "start_time": "...", "end_time": "..." }
 }`}</pre>
             </div>
           </div>
@@ -402,32 +394,6 @@ export function SettingsPage({
     "price": 300
   }
 ]`}</pre>
-            <p className="mt-3 mb-2 font-bold text-slate-400">// مثال /patients?q=... (ملف مريض):</p>
-            <pre className="overflow-x-auto whitespace-pre text-[11px] leading-relaxed">{`{
-  "id": "54685b19-...",
-  "name": "زياد",
-  "phone": "0124478545",
-  "gender": "ذكر",
-  "age": 26,
-  "summary": { "appointments_count": 3, "outstanding": 0 },
-  "recent_appointments": [...],
-  "recent_invoices": [...]
-}`}</pre>
-            <p className="mt-3 mb-2 font-bold text-slate-400">// مثال POST /bookings (استجابة الحجز):</p>
-            <pre className="overflow-x-auto whitespace-pre text-[11px] leading-relaxed">{`{
-  "ok": true,
-  "appointment": {
-    "id": "51f98f84-...",
-    "patient_id": "54685b19-...",
-    "patient_name": "زياد",
-    "service_id": "c6e2e96b-...",
-    "service_name": "تنظيف الأسنان",
-    "start_time": "2026-10-26T10:00:00Z",
-    "end_time": "2026-10-26T10:45:00Z",
-    "status": "scheduled",
-    "notes": "أول زيارة"
-  }
-}`}</pre>
           </div>
 
           {/* n8n setup instructions */}
@@ -435,11 +401,11 @@ export function SettingsPage({
             <p className="mb-2 font-bold text-slate-800">طريقة الاستخدام في n8n:</p>
             <ol className="list-inside list-decimal space-y-1 text-xs text-slate-600">
               <li>أضف عقدة <strong>HTTP Request</strong> في الـ workflow</li>
-              <li>للسحب: Method = <code className="rounded bg-white px-1">GET</code>، URL = <code className="rounded bg-white px-1" dir="ltr">.../services</code> أو <code className="rounded bg-white px-1" dir="ltr">.../patients</code></li>
+              <li>للسحب: Method = <code className="rounded bg-white px-1">GET</code>، URL = <code className="rounded bg-white px-1" dir="ltr">.../services</code></li>
               <li>للحجز: Method = <code className="rounded bg-white px-1">POST</code>، URL = <code className="rounded bg-white px-1" dir="ltr">.../bookings</code>، Body = JSON</li>
               <li>لا حاجة لمفاتيح أو مصادقة — الـ API عام ومفتوح</li>
-              <li>ستجد البيانات في <code className="rounded bg-white px-1">$json</code> (مصفوفة مباشرة)</li>
-              <li>لملف مريض مفرد: <code className="rounded bg-white px-1" dir="ltr">.../patients?q=&lt;الاسم أو الهاتف&gt;</code> — URL واحد يكتشف النوع تلقائيًا</li>
+              <li>ستجد البيانات في <code className="rounded bg-white px-1">$json</code></li>
+              <li>الحجز يُسجّل المريض تلقائيًا إن لم يكن موجودًا، ويتحقق من توفر الميعاد على مستوى العيادة كلها</li>
             </ol>
           </div>
         </div>
