@@ -3,7 +3,7 @@
   "functions": {
     "clinic-api": {
       "hasChanged": false,
-      "hash": "69bdd7fb71ce62cc8ab17324a9ec1447c3aafad542c16825cd0f337a5031e523"
+      "hash": "e76fe03581f216d79f3638b6b086c7d3fb5f80cd37efa9a265f317e5c3904f63"
     },
     "n8n-proxy": {
       "hasChanged": false,

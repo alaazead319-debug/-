@@ -23,32 +23,6 @@ interface PatientRow {
   gender: string;
 }
 
-// ---- Google-Sheets-compatible column layouts ----
-// First element = header row, then one array per data row.
-const SERVICE_COLUMNS = ['#', 'الاسم', 'الوصف', 'التصنيف', 'المدة (دقيقة)', 'السعر (ر.س)', 'تاريخ الإنشاء'];
-const PATIENT_COLUMNS = ['#', 'الاسم', 'الهاتف', 'الجنس'];
-
-function serviceToRow(s: ServiceRow, i: number): unknown[] {
-  return [
-    i + 1,
-    s.name,
-    s.description ?? '',
-    s.category,
-    s.duration_min,
-    Number(s.price),
-    s.created_at,
-  ];
-}
-
-function patientToRow(p: PatientRow, i: number): unknown[] {
-  return [
-    i + 1,
-    p.name,
-    p.phone ?? '',
-    p.gender,
-  ];
-}
-
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { status: 200, headers: corsHeaders });
@@ -71,12 +45,14 @@ Deno.serve(async (req: Request) => {
     const pathname = url.pathname.replace(/\/$/, '');
     const segments = pathname.split('/').filter(Boolean);
     const resource = segments[segments.length - 1] ?? 'services';
+    // ?format=object keeps the old envelope; default is a bare array at the root.
+    const wantEnvelope = url.searchParams.get('format') === 'object';
 
     // ----- /services -----
     if (resource === 'services') {
       const category = url.searchParams.get('category');
       const q = url.searchParams.get('q');
-      const limit = Math.min(Number(url.searchParams.get('limit') ?? '500'), 1000);
+      const limit = Math.min(Number(url.searchParams.get('limit') ?? '1000'), 1000);
 
       let query = supabase.from('services').select('*').order('name', { ascending: true }).limit(limit);
       if (category) query = query.eq('category', category);
@@ -90,35 +66,28 @@ Deno.serve(async (req: Request) => {
         });
       }
 
-      const services = (data as ServiceRow[]) ?? [];
-      const rows: unknown[][] = [
-        SERVICE_COLUMNS,
-        ...services.map((s, i) => serviceToRow(s, i)),
-      ];
+      // Bare array of objects: [{ id, name, description, duration_min, price }, ...]
+      // price is a JS number; description is null when absent.
+      const services = ((data as ServiceRow[]) ?? []).map((s) => ({
+        id: s.id,
+        name: s.name,
+        description: s.description,
+        duration_min: s.duration_min,
+        price: Number(s.price),
+      }));
 
-      return new Response(
-        JSON.stringify({
-          ok: true,
-          resource: 'services',
-          count: services.length,
-          columns: SERVICE_COLUMNS,
-          // Array-of-rows, sheets-ready: first row is headers, then data rows.
-          rows,
-          // Same data as objects, for n8n nodes that prefer JSON objects.
-          services: services.map((s) => ({
-            id: s.id,
-            name: s.name,
-            description: s.description,
-            duration_min: s.duration_min,
-            duration_label: `${s.duration_min} دقيقة`,
-            price: Number(s.price),
-            price_label: `${Number(s.price).toFixed(2)} ر.س`,
-            category: s.category,
-            created_at: s.created_at,
-          })),
-        }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-      );
+      if (wantEnvelope) {
+        return new Response(
+          JSON.stringify({ ok: true, count: services.length, services }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        );
+      }
+
+      // Default: bare array at the root.
+      return new Response(JSON.stringify(services), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     // ----- /patients -----
@@ -133,33 +102,34 @@ Deno.serve(async (req: Request) => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
-      const patients = (data as PatientRow[]) ?? [];
-      const rows: unknown[][] = [
-        PATIENT_COLUMNS,
-        ...patients.map((p, i) => patientToRow(p, i)),
-      ];
+      const patients = ((data as PatientRow[]) ?? []).map((p) => ({
+        id: p.id,
+        name: p.name,
+        phone: p.phone,
+        gender: p.gender,
+      }));
 
-      return new Response(
-        JSON.stringify({
-          ok: true,
-          resource: 'patients',
-          count: patients.length,
-          columns: PATIENT_COLUMNS,
-          rows,
-          patients,
-        }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-      );
+      if (wantEnvelope) {
+        return new Response(
+          JSON.stringify({ ok: true, count: patients.length, patients }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        );
+      }
+      return new Response(JSON.stringify(patients), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
+    // ----- root: docs -----
     return new Response(
       JSON.stringify({
         ok: true,
         endpoints: {
-          services: 'GET /functions/v1/clinic-api/services?category=&q=&limit=',
-          patients: 'GET /functions/v1/clinic-api/patients',
+          services: 'GET /functions/v1/clinic-api/services?category=&q=&limit=&format=',
+          patients: 'GET /functions/v1/clinic-api/patients?format=',
         },
-        note: 'الاستجابة تحتوي على حقل rows (صفوف جدول جاهزة للصق في Google Sheets داخل n8n)',
+        note: 'افتراضيًا يُرجع مصفوفة مباشرة في الجذر. استخدم ?format=object للحصول على غلاف { ok, count, services }.',
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     );

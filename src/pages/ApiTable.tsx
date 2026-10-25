@@ -55,8 +55,11 @@ export function ApiTable({ settings }: { settings: Settings | null }) {
           throw new Error(`فشل الطلب (${res.status})`);
         }
         const json = await res.json();
+        // API returns a bare array at the root by default; fall back to
+        // the object envelope if present (?format=object).
+        const isEnvelope = json && typeof json === 'object' && !Array.isArray(json);
         const dataKey = s === 'services' ? 'services' : 'patients';
-        const list = (json?.[dataKey] as Row[]) ?? [];
+        const list = (isEnvelope ? (json?.[dataKey] as Row[]) : (json as Row[])) ?? [];
         setRows(list.map((r, i) => ({ ...r, index: i + 1 })));
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
